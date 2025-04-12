@@ -44,7 +44,6 @@ const isDigitComplete = (num: number): boolean => {
   align-items: center;
   gap: 5px;
   margin-top: 1em;
-   flex-wrap: wrap;
 }
 
  .number-pad p {

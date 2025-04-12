@@ -1,6 +1,6 @@
 <!-- ./components/Controls.vue -->
 <script setup lang="ts"> // Added lang="ts"
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 // Define component props using TypeScript interface
 interface Props {
