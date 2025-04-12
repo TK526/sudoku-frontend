@@ -86,14 +86,13 @@ const handlePause = (): void => {
 </template>
 
 <style scoped>
-/* Styles remain the same as provided in the dump */
 .controls-container {
   display: flex;
-  justify-content: center; /* Center items */
+  justify-content: center;
   align-items: center;
-  gap: 15px; /* Space between elements */
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
-   padding: 0.5em 0;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 0.5em 0;
 }
 
 .difficulty-selector, .game-info {
@@ -104,6 +103,8 @@ const handlePause = (): void => {
 
  label {
     font-weight: bold;
+    /* Ensure label text is dark */
+    color: #333;
  }
 
  select, button {
@@ -113,10 +114,26 @@ const handlePause = (): void => {
     background-color: var(--button-bg);
     cursor: pointer;
     font-size: 0.9rem;
+    /* --- ADD THIS --- */
+    color: #333; /* Set default text color to dark grey */
+    text-align: center; /* Center text in button/select */
  }
 
+ /* --- ADD THIS to specifically style select dropdown text --- */
  select {
     min-width: 120px;
+    appearance: none; /* Allows custom styling, removes default arrow sometimes */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); /* Simple dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right .7em top 50%;
+    background-size: .65em auto;
+    padding-right: 2em; /* Add space for the arrow */
+    text-align-last: center; /* Center selected option text */
+ }
+  /* Style for the options within the dropdown */
+ select option {
+     color: #000; /* Ensure options are black */
+     background-color: #fff; /* Ensure background is white */
  }
 
  button:hover:not(:disabled) {
@@ -125,10 +142,11 @@ const handlePause = (): void => {
 
  button:disabled {
     background-color: var(--button-disabled-bg);
-    color: var(--button-disabled-text);
+    color: var(--button-disabled-text); /* Keep disabled text grey */
     cursor: not-allowed;
  }
 
+ /* Keep span styles the same */
  span {
     font-size: 0.9rem;
     background-color: #fff;
