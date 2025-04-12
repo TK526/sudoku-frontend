@@ -132,6 +132,8 @@ onMounted(() => {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     box-sizing: border-box; /* Include padding in width */
+    background-color: white;
+    color: black;
  }
 
 .modal-actions {
