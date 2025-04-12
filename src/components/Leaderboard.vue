@@ -1,14 +1,13 @@
 <!-- ./components/Leaderboard.vue -->
-<script setup lang="ts"> // Added lang="ts"
-import type { LeaderboardData } from '../types'; // Import types
+<script setup lang="ts"> // ADD lang="ts"
+import type { LeaderboardData } from '../types';
 
-// Define Props interface
 interface Props {
-  leaderboardData: LeaderboardData //Might need to check null pointer check here
+  // Allow null for the initial state before data is fetched
+  leaderboardData: LeaderboardData | null;
   isLoading: boolean;
 }
-// Use defineProps with the interface
-defineProps<Props>();
+defineProps<Props>(); // Use the interface
 
 // Specify type for difficultyOrder keys
 const difficultyOrder: Array<keyof LeaderboardData> = ['beginner', 'intermediate', 'hard', 'expert'];
