@@ -1,11 +1,10 @@
 <!-- ./components/Controls.vue -->
-<script setup lang="ts"> // Added lang="ts"
-import { ref } from 'vue';
+<script setup lang="ts">
+import { ref, watch } from 'vue'; // Import watch
 
-// Define component props using TypeScript interface
+// Define component props
 interface Props {
   currentDifficulty: string;
-  // score: number; // Score prop is not used effectively, remove or keep as 0? Keeping for now.
   errors: number;
   elapsedTime: number;
   hintsRemaining: number;
@@ -13,21 +12,28 @@ interface Props {
   gameInProgress: boolean;
   isLoading: boolean;
 }
-// Use withDefaults if needed, but here all seem required or have internal defaults
 const props = defineProps<Props>();
 
-// Define component emits using TypeScript syntax
+// Define component emits - ADD 'newGame'
 const emit = defineEmits<{
   (event: 'startGame', difficulty: string): void;
   (event: 'useHint'): void;
   (event: 'togglePause'): void;
+  (event: 'newGame'): void; // Add this emit
 }>();
 
-// Local state for difficulty selection before game starts
+// Local state
 const selectedDifficulty = ref<string>(props.currentDifficulty || 'beginner');
 const difficulties: string[] = ['beginner', 'intermediate', 'hard', 'expert'];
 
-// Format time function with types
+// Watcher to sync local difficulty when game stops/resets
+watch(() => props.gameInProgress, (newGameInProgressValue, oldGameInProgressValue) => {
+  if (oldGameInProgressValue === true && newGameInProgressValue === false) {
+    selectedDifficulty.value = props.currentDifficulty || 'beginner';
+  }
+});
+
+// Format time function
 const formatTime = (totalSeconds: number): string => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -35,7 +41,7 @@ const formatTime = (totalSeconds: number): string => {
 };
 
 // Event handlers
-const handleStart = (): void => {
+const handleStart = (): void => { // This is for the initial "Start Game" button
     if (!props.isLoading) {
         emit('startGame', selectedDifficulty.value);
     }
@@ -48,9 +54,15 @@ const handleHint = (): void => {
 };
 
 const handlePause = (): void => {
-    // Allow toggling pause even if loading? Usually yes.
     if (props.gameInProgress) {
         emit('togglePause');
+    }
+};
+
+// *** ADD this handler for the "New Game" button ***
+const handleNewGameClick = (): void => {
+    if (!props.isLoading) {
+        emit('newGame'); // Emit the reset event
     }
 };
 
@@ -58,10 +70,10 @@ const handlePause = (): void => {
 
 <template>
   <div class="controls-container">
+    <!-- Initial Start -->
     <div class="difficulty-selector" v-if="!gameInProgress">
       <label for="difficulty">Difficulty: </label>
       <select id="difficulty" v-model="selectedDifficulty" :disabled="isLoading">
-        <!-- Capitalize difficulty names for display -->
         <option v-for="diff in difficulties" :key="diff" :value="diff">
             {{ diff.charAt(0).toUpperCase() + diff.slice(1) }}
         </option>
@@ -71,16 +83,17 @@ const handlePause = (): void => {
         </button>
     </div>
 
+    <!-- In-Game Controls -->
     <div v-if="gameInProgress" class="game-info">
       <span>Level: {{ currentDifficulty }}</span>
-      <!-- Removed score display as it wasn't implemented -->
        <span>Errors: {{ errors }}</span>
       <span>Time: {{ formatTime(elapsedTime) }}</span>
       <button @click="handlePause" :disabled="isLoading">{{ isPaused ? 'Resume' : 'Pause' }}</button>
       <button @click="handleHint" :disabled="isLoading || isPaused || hintsRemaining <= 0">
         💡 Hint ({{ hintsRemaining }})
       </button>
-       <button @click="handleStart" :disabled="isLoading">New Game</button>
+       <!-- *** CHANGE @click here *** -->
+       <button @click="handleNewGameClick" :disabled="isLoading">New Game</button>
     </div>
   </div>
 </template>

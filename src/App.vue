@@ -110,6 +110,13 @@ const startGame = async (selectedDifficulty: string): Promise<void> => {
     }
 };
 
+// Handle the 'newGame' event emitted by Controls
+const handleNewGame = (): void => {
+    console.log("[Debug] handleNewGame - Resetting for new game selection.");
+    resetGameState();
+    // Now the difficulty selector should show because gameInProgress is false
+};
+
 // Reset Game State
 const resetGameState = (): void => {
     console.log("[Debug] resetGameState");
@@ -324,7 +331,6 @@ onUnmounted(() => {
   <div id="app-container">
     <header class="app-header">
       <h1>Vue Sudoku TS</h1>
-      <!-- Ensure all comments are outside component tags -->
       <Controls
         :current-difficulty="difficulty"
         :errors="errors"
@@ -336,6 +342,7 @@ onUnmounted(() => {
         @start-game="startGame"
         @use-hint="requestHint"
         @toggle-pause="togglePause"
+        @new-game="handleNewGame"
       ></Controls>
     </header>
 
