@@ -407,14 +407,71 @@ onUnmounted(() => {
  #app-container { display: flex; flex-direction: column; max-width: 1000px; min-height: 100vh; margin: 0 auto; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
  .app-header { background-color: var(--header-bg); padding: 1em; border-bottom: 1px solid var(--border-color); text-align: center; }
  .app-header h1 { margin: 0 0 0.5em 0; font-weight: 600; }
- .main-content { display: flex; flex-direction: row; padding: 1em; gap: 1.5em; flex-grow: 1; }
- .game-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 1em; }
- .start-prompt { margin-top: 50px; padding: 20px; text-align: center; color: #555; font-size: 1.1em; }
+ .main-content {
+   display: flex;
+   flex-direction: row;
+   padding: 1em;
+   gap: 1.5em;
+   flex-grow: 1;
+   /* Add align-items start to prevent vertical stretching if content height varies */
+   align-items: flex-start;
+ }
+
+ .game-area {
+    /* flex-grow: 1; Remove flex-grow or reduce significantly */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8em;
+    /* *** ADD a width related to the grid's max-width *** */
+    /* Match the max-width used in SudokuGrid.vue's container */
+    width: 540px; /* Or slightly more to accommodate padding/margins */
+    max-width: 100%; /* Prevent overflow on very small screens */
+    /* min-height: 400px; Keep min-height */
+ }
+
+ /* Keep the prompt centering styles */
+ .game-area.game-area--prompt {
+    justify-content: center;
+ }
+
+ .start-prompt {
+     padding: 20px;
+     text-align: center;
+     color: #555;
+     font-size: 1.1em;
+     /* Ensure it takes the width of the game area */
+     width: 100%;
+ }
  .start-prompt div { margin-top: 10px; font-style: italic; }
- .loading-overlay { position: fixed; inset: 0; background-color: rgba(255, 255, 255, 0.8); display: flex; justify-content: center; align-items: center; font-size: 1.5em; color: #333; z-index: 1000; }
- .loading-overlay span { background-color: #fff; padding: 15px 25px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
- .sidebar { flex-basis: 280px; flex-shrink: 0; background-color: var(--sidebar-bg); padding: 1em; border-left: 1px solid var(--border-color); }
- @media (max-width: 800px) { .main-content { flex-direction: column; } .sidebar { flex-basis: auto; width: 100%; border-left: none; border-top: 1px solid var(--border-color); padding: 0.5em; } .game-area { width: 100%; } }
+
+
+ .loading-overlay {
+     position: fixed; inset: 0;
+     background-color: rgba(255, 255, 255, 0.8);
+     display: flex; justify-content: center; align-items: center;
+     font-size: 1.5em; color: #333; z-index: 1000;
+ }
+ .loading-overlay span {
+    background-color: #fff; padding: 15px 25px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+ }
+
+ .sidebar {
+    flex-basis: 280px; flex-shrink: 0; /* Keep sidebar width fixed */
+    background-color: var(--sidebar-bg); padding: 1em;
+    border-left: 1px solid var(--border-color);
+    /* Ensure sidebar maintains height */
+    align-self: stretch; /* Make it stretch to height of main-content */
+ }
+
+ /* Responsive styles remain largely the same */
+ @media (max-width: 800px) {
+     .main-content { flex-direction: column; align-items: center; /* Center items when stacked */ }
+     /* Remove fixed width for game-area on small screens */
+     .game-area { width: 100%; }
+     .sidebar { flex-basis: auto; width: 100%; border-left: none; border-top: 1px solid var(--border-color); padding: 0.5em; align-self: auto; /* Reset stretch */ }
+ }
+
  button { padding: 8px 15px; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--button-bg); cursor: pointer; font-size: 0.95rem; transition: background-color 0.2s ease; }
  button:hover:not(:disabled) { background-color: var(--button-hover-bg); }
  button:disabled { background-color: var(--button-disabled-bg); color: var(--button-disabled-text); cursor: not-allowed; opacity: 0.7; }
