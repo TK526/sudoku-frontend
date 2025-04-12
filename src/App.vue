@@ -41,6 +41,8 @@ const finalScore = ref<number | null>(null);
 const errorCells = reactive<Set<string>>(new Set()); // 'row-col'
 const hintCells = reactive<Set<string>>(new Set()); // 'row-col'
 const leaderboardData = ref<LeaderboardData | null>(null);
+const animatingRows = reactive<Set<number>>(new Set()); // Animation
+const animatingCols = reactive<Set<number>>(new Set()); // Animation
 
 // =============================
 // COMPUTED PROPERTIES
@@ -126,6 +128,8 @@ const resetGameState = (): void => {
     visibleCount.value = 0; gameStartTime.value = null; elapsedTime.value = 0;
     isPaused.value = false; isCompleted.value = false; showGameEndModal.value = false;
     finalScore.value = null; errorCells.clear(); hintCells.clear();
+    animatingRows.clear(); // Animation
+    animatingCols.clear(); // Animation
 };
 
 // Handle Cell Selection from Grid Component
@@ -136,6 +140,45 @@ const handleCellSelect = (position: CellPosition): void => {
     }
     selectedCell.value = position;
     errorCells.delete(`${position.row}-${position.col}`);
+};
+
+//Animation
+const checkRowColCompletion = (row: number, col: number): void => {
+    const size = gridDimension.value;
+    let rowComplete = true;
+    let colComplete = true;
+
+    // Check Row
+    for (let c = 0; c < size; c++) {
+        if (grid.value[row]?.[c] === 0) {
+            rowComplete = false;
+            break;
+        }
+    }
+
+    // Check Column
+    for (let r = 0; r < size; r++) {
+        if (grid.value[r]?.[col] === 0) {
+            colComplete = false;
+            break;
+        }
+    }
+
+    // Trigger animations if units are complete
+    if (rowComplete) animatingRows.add(row);
+    if (colComplete) animatingCols.add(col);
+
+    // Clear animation classes after a delay
+    if (rowComplete || colComplete) {
+        // Use separate timeouts in case both complete simultaneously
+        if (rowComplete) {
+            setTimeout(() => animatingRows.delete(row), 600); // Shorter duration for shake
+        }
+        if (colComplete) {
+            setTimeout(() => animatingCols.delete(col), 600); // Shorter duration for shake
+        }
+        console.log(`[Debug] Animating Row: ${rowComplete ? row : 'N/A'}, Col: ${colComplete ? col : 'N/A'}`);
+    }
 };
 
 // Handle Number Input from Keyboard
@@ -163,8 +206,11 @@ const handleNumberInput = async (value: number): Promise<void> => {
         const cellKey = `${row}-${col}`;
         correct ? errorCells.delete(cellKey) : errorCells.add(cellKey);
 
-        if (correct && newVisibleCount >= 81) {
-            await checkGameCompletion(); // Verify actual completion
+        if (correct) {
+            // *** CALL SIMPLIFIED COMPLETION CHECK HERE ***
+            checkRowColCompletion(row, col);
+            // Check for overall game completion
+            if (newVisibleCount >= 81) { await checkGameCompletion(); }
         }
     } catch (err: any) {
         console.error("[Debug] handleNumberInput - Error:", err);
@@ -202,6 +248,10 @@ const requestHint = async (): Promise<void> => {
             if (hintData.visibleValuesCount !== undefined) visibleCount.value = hintData.visibleValuesCount;
             const cellKey = `${hintData.rowIndex}-${hintData.columnIndex}`;
             hintCells.add(cellKey); errorCells.delete(cellKey);
+
+            checkRowColCompletion(hintData.rowIndex, hintData.columnIndex);
+
+            // Check for overall game completion
             if (visibleCount.value >= 81) { await checkGameCompletion(); }
         }
     } catch (err: any) {
@@ -357,6 +407,9 @@ onUnmounted(() => {
           :error-cells="errorCells"
           :hint-cells="hintCells"
           :is-paused="isPaused"
+          :animating-rows="animatingRows"
+          :animating-cols="animatingCols"
+          :animating-boxes="new Set()"
           @cell-selected="handleCellSelect"
         ></SudokuGrid>
         <!-- Show prompt when no game is active -->

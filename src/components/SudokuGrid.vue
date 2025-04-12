@@ -11,6 +11,8 @@ interface Props {
   errorCells: Set<string>; // Reactive Set passed down ('row-col')
   hintCells: Set<string>; // Reactive Set passed down ('row-col')
   isPaused: boolean;
+  animatingRows: Set<number>;   // Animation
+  animatingCols: Set<number>;   // Animation
 }
 const props = defineProps<Props>();
 
@@ -48,17 +50,19 @@ const getCellClass = (row: number, col: number): string[] => {
 
   if (prefilled) classes.push('prefilled');
   if (isSelected(row, col)) classes.push('selected');
-  if (isError(row, col)) classes.push('error');
+  if (isError(row, col)) classes.push('error'); // Keep error style separate
   if (hint) classes.push('hint');
-  if (!prefilled && !hint) classes.push('user-input'); // Add class for non-prefilled, non-hint cells
+  if (!prefilled && !hint) classes.push('user-input');
 
-  // Add thicker borders for subgrids
-  if ((col + 1) % subgridSize.value === 0 && col < gridDimension.value - 1) {
-    classes.push('thick-border-right');
+  // Borders - No change
+  if ((col + 1) % subgridSize.value === 0 && col < gridDimension.value - 1) { classes.push('thick-border-right'); }
+  if ((row + 1) % subgridSize.value === 0 && row < gridDimension.value - 1) { classes.push('thick-border-bottom'); }
+
+  // *** CHECK ROW/COL ANIMATION ***
+  if (props.animatingRows.has(row) || props.animatingCols.has(col)) {
+      classes.push('animate-shake-unit'); // Use new class name
   }
-  if ((row + 1) % subgridSize.value === 0 && row < gridDimension.value - 1) {
-    classes.push('thick-border-bottom');
-  }
+  // *** END CHECK ***
 
   return classes;
 };
@@ -201,9 +205,27 @@ const selectCell = (row: number, col: number): void => {
     color: white; font-weight: bold; z-index: 10; pointer-events: none;
  }
 
-@keyframes shake {
+ @keyframes errorShake { /* Renamed original shake */
   0%, 100% { transform: translateX(0); }
-  25%, 75% { transform: translateX(-4px); } /* Increased shake */
+  25%, 75% { transform: translateX(-4px); }
   50% { transform: translateX(4px); }
+}
+.sudoku-cell.error {
+   /* ... other error styles ... */
+   animation: errorShake 0.4s ease-in-out; /* Apply specific error shake */
+}
+
+@keyframes completionShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); } /* Multiple quick shakes */
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+.sudoku-cell.animate-shake-unit {
+  /* Apply completion shake animation once */
+  animation: completionShake 0.6s ease-in-out 1; /* Adjust timing (0.6s) */
+  /* Optional: Add a subtle background highlight during the shake */
+  /* background-color: var(--cell-selected-bg); */
+  z-index: 5; /* Ensure animated cells are visually on top */
 }
 </style>
