@@ -1,43 +1,56 @@
-<script setup>
+<!-- ./components/Controls.vue -->
+<script setup lang="ts"> // Added lang="ts"
 import { ref, computed } from 'vue';
 
-const props = defineProps({
-    currentDifficulty: String,
-    score: Number, // Maybe replace with errors?
-    errors: Number,
-    elapsedTime: Number,
-    hintsRemaining: Number,
-    isPaused: Boolean,
-    gameInProgress: Boolean,
-    isLoading: Boolean,
-});
+// Define component props using TypeScript interface
+interface Props {
+  currentDifficulty: string;
+  // score: number; // Score prop is not used effectively, remove or keep as 0? Keeping for now.
+  errors: number;
+  elapsedTime: number;
+  hintsRemaining: number;
+  isPaused: boolean;
+  gameInProgress: boolean;
+  isLoading: boolean;
+}
+// Use withDefaults if needed, but here all seem required or have internal defaults
+const props = defineProps<Props>();
 
-const emit = defineEmits(['start-game', 'use-hint', 'toggle-pause']);
+// Define component emits using TypeScript syntax
+const emit = defineEmits<{
+  (event: 'startGame', difficulty: string): void;
+  (event: 'useHint'): void;
+  (event: 'togglePause'): void;
+}>();
 
-const selectedDifficulty = ref(props.currentDifficulty || 'beginner');
-const difficulties = ['beginner', 'intermediate', 'hard', 'expert'];
+// Local state for difficulty selection before game starts
+const selectedDifficulty = ref<string>(props.currentDifficulty || 'beginner');
+const difficulties: string[] = ['beginner', 'intermediate', 'hard', 'expert'];
 
-const formatTime = (totalSeconds) => {
+// Format time function with types
+const formatTime = (totalSeconds: number): string => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
 
-const handleStart = () => {
+// Event handlers
+const handleStart = (): void => {
     if (!props.isLoading) {
-        emit('start-game', selectedDifficulty.value);
+        emit('startGame', selectedDifficulty.value);
     }
 };
 
-const handleHint = () => {
-     if (!props.isLoading && !props.isPaused && props.hintsRemaining > 0) {
-        emit('use-hint');
+const handleHint = (): void => {
+     if (!props.isLoading && props.gameInProgress && !props.isPaused && props.hintsRemaining > 0) {
+        emit('useHint');
     }
 };
 
-const handlePause = () => {
+const handlePause = (): void => {
+    // Allow toggling pause even if loading? Usually yes.
     if (props.gameInProgress) {
-        emit('toggle-pause');
+        emit('togglePause');
     }
 };
 
@@ -48,7 +61,10 @@ const handlePause = () => {
     <div class="difficulty-selector" v-if="!gameInProgress">
       <label for="difficulty">Difficulty: </label>
       <select id="difficulty" v-model="selectedDifficulty" :disabled="isLoading">
-        <option v-for="diff in difficulties" :key="diff" :value="diff">{{ diff }}</option>
+        <!-- Capitalize difficulty names for display -->
+        <option v-for="diff in difficulties" :key="diff" :value="diff">
+            {{ diff.charAt(0).toUpperCase() + diff.slice(1) }}
+        </option>
       </select>
        <button @click="handleStart" :disabled="isLoading">
         {{ isLoading ? 'Starting...' : 'Start Game' }}
@@ -57,19 +73,20 @@ const handlePause = () => {
 
     <div v-if="gameInProgress" class="game-info">
       <span>Level: {{ currentDifficulty }}</span>
-      <!-- <span>Score: {{ score }}</span> -->
+      <!-- Removed score display as it wasn't implemented -->
        <span>Errors: {{ errors }}</span>
       <span>Time: {{ formatTime(elapsedTime) }}</span>
       <button @click="handlePause" :disabled="isLoading">{{ isPaused ? 'Resume' : 'Pause' }}</button>
       <button @click="handleHint" :disabled="isLoading || isPaused || hintsRemaining <= 0">
         💡 Hint ({{ hintsRemaining }})
       </button>
-       <button @click="handleStart" :disabled="isLoading">New Game</button> <!-- Allow starting new game -->
+       <button @click="handleStart" :disabled="isLoading">New Game</button>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Styles remain the same as provided in the dump */
 .controls-container {
   display: flex;
   justify-content: center; /* Center items */

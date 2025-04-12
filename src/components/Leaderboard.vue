@@ -1,39 +1,59 @@
-<script setup>
-defineProps({
-  leaderboardData: { type: Object, required: true },
-   isLoading: { type: Boolean, default: false }
-});
+<!-- ./components/Leaderboard.vue -->
+<script setup lang="ts"> // Added lang="ts"
+import type { LeaderboardData } from '../types'; // Import types
 
- const difficultyOrder = ['beginner', 'intermediate', 'hard', 'expert'];
+// Define Props interface
+interface Props {
+  leaderboardData: LeaderboardData //Might need to check null pointer check here
+  isLoading: boolean;
+}
+// Use defineProps with the interface
+defineProps<Props>();
 
- // Function to format score or time if needed, e.g., add commas
- const formatScore = (score) => score?.toLocaleString() || 'N/A';
+// Specify type for difficultyOrder keys
+const difficultyOrder: Array<keyof LeaderboardData> = ['beginner', 'intermediate', 'hard', 'expert'];
+
+// Function to format score with types
+const formatScore = (score: number | undefined | null): string => score?.toLocaleString() ?? 'N/A';
+
+// Helper to capitalize difficulty names
+const capitalize = (s: string): string => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
 </script>
 
 <template>
   <div class="leaderboard">
     <h3>🏆 Leaderboard</h3>
+    <!-- v-if/else-if logic was corrected previously -->
     <div v-if="isLoading" class="loading-message">Loading...</div>
-    <div v-else-if="!leaderboardData || Object.keys(leaderboardData).length === 0" class="no-data">
-       No leaderboard data available yet.
+    <div v-else-if="!leaderboardData" class="no-data">
+       No records yet. Play a game!
     </div>
     <div v-else>
-       <div v-for="difficulty in difficultyOrder" :key="difficulty" class="difficulty-section">
-         <h4>{{ difficulty.charAt(0).toUpperCase() + difficulty.slice(1) }}</h4>
-         <ul v-if="leaderboardData[difficulty]?.length > 0">
-           <li v-for="(record, index) in leaderboardData[difficulty]" :key="record.id || index">
-             <span>{{ index + 1 }}. {{ record.username }}</span>
-             <span>{{ formatScore(record.score) }}</span>
-           </li>
-         </ul>
-         <p v-else class="no-records">No records for this difficulty.</p>
+       <!-- Check if all difficulties are empty -->
+<div v-if="leaderboardData && difficultyOrder.every(d => !leaderboardData[d]?.length)" class="no-data">
+           No records found for any difficulty.
        </div>
+       <template v-else>
+           <div v-for="difficulty in difficultyOrder" :key="difficulty" class="difficulty-section">
+             <h4>{{ capitalize(difficulty) }}</h4>
+             <!-- Access is now safe because of v-else-if check -->
+             <ul v-if="leaderboardData[difficulty]?.length > 0">
+               <li v-for="(record, index) in leaderboardData[difficulty]" :key="record.id || index">
+                 <span class="rank">{{ index + 1 }}.</span>
+                 <span class="username">{{ record.username }}</span>
+                 <span class="score">{{ formatScore(record.score) }}</span>
+               </li>
+             </ul>
+             <p v-else class="no-records">No records for this difficulty.</p>
+           </div>
+       </template>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Styles remain the same as provided in the dump */
 .leaderboard {
   text-align: left;
   padding: 10px; /* Add some padding inside the sidebar */
@@ -75,17 +95,35 @@ li:last-child {
     border-bottom: none;
 }
 
-li span:first-child {
-    font-weight: bold;
+/* Added classes for better targeting */
+li span.rank {
+    min-width: 20px; /* Align rank numbers */
+    text-align: right;
+    margin-right: 5px;
     color: #555;
 }
- li span:last-child {
+li span.username {
+    font-weight: bold;
+    color: #333; /* Darker name */
+    flex-grow: 1; /* Allow name to take space */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+li span.score {
     color: #0056b3; /* Score color */
+    font-weight: bold;
+    margin-left: 10px;
 }
 
  .loading-message, .no-data, .no-records {
     text-align: center;
     color: #777;
     padding: 10px;
+    font-style: italic; /* Italicize placeholder text */
  }
+  .no-records {
+      font-size: 0.85em;
+      padding: 3px 0; /* Less padding for per-difficulty message */
+  }
 </style>

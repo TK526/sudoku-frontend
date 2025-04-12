@@ -1,27 +1,24 @@
-<script setup>
-import { computed } from 'vue';
+<!-- ./components/NumberPad.vue -->
+<script setup lang="ts"> // Added lang="ts"
 
-const props = defineProps({
-    digitCounts: { type: Object, required: true },
-    isPaused: { type: Boolean, default: false }
-});
+// Define Props interface
+interface Props {
+  // Object where keys are digits (1-9) and values are their counts
+  digitCounts: { [key: number]: number };
+  isPaused: boolean; // Although not interactive, pause might affect appearance slightly
+}
+const props = defineProps<Props>();
 
-// No longer emitting number-selected
-// const emit = defineEmits(['number-selected']);
+// No emits needed
 
-const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const numbers: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-const isDigitDisabled = (num) => {
-    // Disable if count is 9 or more. Pause doesn't affect display.
-    return (props.digitCounts[num] !== undefined && props.digitCounts[num] >= 9);
+// Determine if a digit button should be visually 'disabled' (greyed out)
+const isDigitComplete = (num: number): boolean => {
+    // Disable if count is 9 or more. Pause doesn't affect display state here.
+    return props.digitCounts[num] !== undefined && props.digitCounts[num] >= 9;
 };
 
-// Removed selectNumber function
-// const selectNumber = (num) => {
-//     if (!isDigitDisabled(num)) {
-//         emit('number-selected', num);
-//     }
-// };
 </script>
 
 <template>
@@ -30,9 +27,9 @@ const isDigitDisabled = (num) => {
     <button
       v-for="num in numbers"
       :key="num"
-      :disabled="isDigitDisabled(num)"
-      class="digit-display-button" 
-      tabindex="-1" 
+      :disabled="isDigitComplete(num)"
+      class="digit-display-button"
+      tabindex="-1"
     >
       {{ num }}
     </button>
@@ -40,6 +37,7 @@ const isDigitDisabled = (num) => {
 </template>
 
 <style scoped>
+/* Styles remain the same as provided in the dump */
 .number-pad {
   display: flex;
   justify-content: center;

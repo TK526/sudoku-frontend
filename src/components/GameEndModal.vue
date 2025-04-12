@@ -1,51 +1,84 @@
-<script setup>
-import { ref } from 'vue';
+<!-- ./components/GameEndModal.vue -->
+<script setup lang="ts"> // Added lang="ts"
+import { ref, onMounted } from 'vue';
 
-const props = defineProps({
-    score: Number,
-    difficulty: String,
-    time: String,
-});
+// Define Props interface
+interface Props {
+  score: number | null; // Score might be null if fetch failed
+  difficulty: string;
+  time: string;
+}
+const props = defineProps<Props>();
 
-const emit = defineEmits(['submit-score', 'close']);
+// Define Emits type literal
+const emit = defineEmits<{
+  (event: 'submitScore', username: string): void;
+  (event: 'close'): void;
+}>();
 
-const username = ref('');
+// Local state with types
+const username = ref<string>('');
+const usernameInput = ref<HTMLInputElement | null>(null); // Ref for autofocus
 
-const handleSubmit = () => {
-    if (username.value.trim()) {
-        emit('submit-score', username.value.trim());
+// Event handlers with types
+const handleSubmit = (): void => {
+    const trimmedUsername = username.value.trim();
+    if (trimmedUsername) {
+      emit('submitScore', trimmedUsername);
     } else {
         alert("Please enter a username.");
+        usernameInput.value?.focus(); // Optional chaining for safety
     }
 };
 
-const closeModal = () => {
+const closeModal = (): void => {
      emit('close');
 };
+
+// Autofocus the input when the modal appears
+onMounted(() => {
+  // Timeout helps ensure element is rendered after modal transition/display
+  setTimeout(() => {
+      usernameInput.value?.focus();
+  }, 50); // Small delay
+});
+
 </script>
 
 <template>
-  <div class="modal-overlay" @click.self="closeModal"> <!-- Close on overlay click -->
+  <div class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <h2>🎉 Game Completed! 🎉</h2>
       <p>Difficulty: <strong>{{ difficulty }}</strong></p>
       <p>Time: <strong>{{ time }}</strong></p>
-      <p>Final Score: <strong>{{ score?.toLocaleString() ?? 'Calculating...' }}</strong></p>
+      <p>Final Score: <strong>{{ score?.toLocaleString() ?? 'N/A' }}</strong></p> <!-- Handle null score -->
 
-      <div class="form-group">
-        <label for="username">Enter your name for the leaderboard:</label>
-        <input type="text" id="username" v-model="username" placeholder="Your Name" maxlength="20" required>
-      </div>
+      <!-- Use form for better accessibility and enter key submission -->
+      <form @submit.prevent="handleSubmit">
+          <div class="form-group">
+            <label for="username">Enter your name for the leaderboard:</label>
+            <input
+                ref="usernameInput"
+                type="text"
+                id="username"
+                v-model="username"
+                placeholder="Your Name"
+                maxlength="20"
+                required
+            >
+          </div>
 
-      <div class="modal-actions">
-        <button @click="handleSubmit" class="submit-btn">Submit Score</button>
-        <button @click="closeModal" class="close-btn">Close</button>
-      </div>
+          <div class="modal-actions">
+            <button type="submit" class="submit-btn">Submit Score</button>
+            <button type="button" @click="closeModal" class="close-btn">Close</button> <!-- Changed to type="button" -->
+          </div>
+      </form>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Styles remain the same as provided in the dump */
 .modal-overlay {
   position: fixed;
   top: 0;

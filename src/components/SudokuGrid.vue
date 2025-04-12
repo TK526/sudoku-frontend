@@ -1,44 +1,56 @@
-<script setup>
+<!-- ./components/SudokuGrid.vue -->
+<script setup lang="ts"> // Added lang="ts"
 import { computed } from 'vue';
+import type { CellPosition } from '../types'; // Import shared type
 
-const props = defineProps({
-  gridData: { type: Array, required: true },
-  initialGrid: { type: Array, required: true },
-  selectedCell: { type: Object, default: null },
-  errorCells: { type: Object, required: true }, // Reactive Set
-  hintCells: { type: Object, required: true }, // Reactive Set
-  isPaused: { type: Boolean, default: false }
-});
+// Define Props interface
+interface Props {
+  gridData: number[][];
+  initialGrid: number[][];
+  selectedCell: CellPosition | null;
+  errorCells: Set<string>; // Reactive Set passed down ('row-col')
+  hintCells: Set<string>; // Reactive Set passed down ('row-col')
+  isPaused: boolean;
+}
+const props = defineProps<Props>();
 
-const emit = defineEmits(['cell-selected']);
+// Define Emits type literal
+const emit = defineEmits<{
+  (event: 'cell-selected', position: CellPosition): void;
+}>();
 
-const gridDimension = computed(() => props.gridData.length);
-const subgridSize = computed(() => Math.sqrt(gridDimension.value));
+// Computed properties with types
+const gridDimension = computed<number>(() => props.gridData?.length || 9);
+const subgridSize = computed<number>(() => Math.sqrt(gridDimension.value));
 
-const isPrefilled = (row, col) => {
-    // Check the initial grid state passed down
-    return props.initialGrid[row]?.[col] !== 0;
+// Helper functions with types
+const isPrefilled = (row: number, col: number): boolean => {
+    return !!props.initialGrid[row]?.[col]; // Check if non-zero
 };
 
- const isSelected = (row, col) => {
+const isSelected = (row: number, col: number): boolean => {
     return props.selectedCell?.row === row && props.selectedCell?.col === col;
- };
+};
 
- const isError = (row, col) => {
+const isError = (row: number, col: number): boolean => {
     return props.errorCells.has(`${row}-${col}`);
- };
+};
 
-  const isHint = (row, col) => {
+const isHint = (row: number, col: number): boolean => {
     return props.hintCells.has(`${row}-${col}`);
- };
+};
 
-
-const getCellClass = (row, col) => {
+// Get cell classes function with types
+const getCellClass = (row: number, col: number): string[] => {
   const classes = ['sudoku-cell'];
-  if (isPrefilled(row, col)) classes.push('prefilled');
+  const prefilled = isPrefilled(row, col);
+  const hint = isHint(row, col);
+
+  if (prefilled) classes.push('prefilled');
   if (isSelected(row, col)) classes.push('selected');
   if (isError(row, col)) classes.push('error');
-  if (isHint(row, col)) classes.push('hint'); // Added hint class
+  if (hint) classes.push('hint');
+  if (!prefilled && !hint) classes.push('user-input'); // Add class for non-prefilled, non-hint cells
 
   // Add thicker borders for subgrids
   if ((col + 1) % subgridSize.value === 0 && col < gridDimension.value - 1) {
@@ -51,38 +63,40 @@ const getCellClass = (row, col) => {
   return classes;
 };
 
-const selectCell = (row, col) => {
-    if (props.isPaused) return; // Prevent selection when paused
-    // Emit only if the cell is NOT prefilled
-    // Let App.vue handle the logic of whether to actually select it
-     emit('cell-selected', { row, col });
-
+// Cell selection handler with types
+const selectCell = (row: number, col: number): void => {
+    if (props.isPaused) return;
+    // Let App.vue handle preventing selection of pre-filled
+    emit('cell-selected', { row, col });
 };
 </script>
 
 <template>
     <div class="sudoku-grid-container" :class="{ paused: isPaused }">
-      <!-- The main grid container - direct children will be the cells -->
       <div v-if="gridData.length > 0" class="sudoku-grid" :style="{ '--grid-size': gridDimension }">
-        <!-- Loop through rows FIRST -->
         <template v-for="(row, rowIndex) in gridData" :key="`row-${rowIndex}`">
-          <!-- Loop through columns SECOND, generating the cells directly -->
           <div
             v-for="(cellValue, colIndex) in row"
             :key="`cell-${rowIndex}-${colIndex}`"
             :class="getCellClass(rowIndex, colIndex)"
             @click="selectCell(rowIndex, colIndex)"
+            role="button"
+            :aria-label="`Cell Row ${rowIndex+1} Column ${colIndex+1} Value ${cellValue || 'Empty'}`"
+            :aria-selected="isSelected(rowIndex, colIndex)"
+            tabindex="0"
+            @keydown.enter.space="selectCell(rowIndex, colIndex)"
           >
             {{ cellValue === 0 ? '' : cellValue }}
           </div>
         </template>
       </div>
-      <div v-else>Loading Grid...</div>
+      <div v-else class="loading-grid">Loading Grid...</div> <!-- Added loading text -->
       <div v-if="isPaused" class="paused-overlay">Paused</div>
     </div>
 </template>
 
 <style scoped>
+/* Styles remain the same as provided in the dump */
  .sudoku-grid-container {
     position: relative;
     margin-bottom: 1em;
@@ -91,6 +105,14 @@ const selectCell = (row, col) => {
     aspect-ratio: 1 / 1;
     margin-left: auto;
     margin-right: auto;
+ }
+ .loading-grid { /* Style for loading text */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Ensure it takes up space */
+    font-style: italic;
+    color: #777;
  }
 
 /* This is the main grid element */
@@ -122,13 +144,18 @@ const selectCell = (row, col) => {
   color: #111; /* Default text color */
   box-sizing: border-box; /* Ensure border doesn't add to size */
 }
+.sudoku-cell:focus { /* Accessibility focus */
+    outline: 2px solid blue;
+    outline-offset: -2px;
+    z-index: 2;
+}
 
 /* Style for user-editable cells (not prefilled) */
-.sudoku-cell:not(.prefilled) {
+.sudoku-cell.user-input {
     font-weight: bold;
     color: #0056b3; /* Blue color for user input */
 }
-.sudoku-cell:not(.prefilled):hover {
+.sudoku-cell.user-input:hover {
     background-color: #f0f8ff; /* Light hover */
 }
 
@@ -143,17 +170,15 @@ const selectCell = (row, col) => {
 /* Style for the currently selected cell (yellow) */
 .sudoku-cell.selected {
   background-color: var(--cell-selected-bg, #fffbaf); /* Added fallback yellow */
-  /* Optional: Add outline */
-  /* outline: 2px solid #f0c000; */
-  z-index: 1; /* Ensure it's visually on top if needed */
+  z-index: 1;
 }
 
 /* Style for cells marked as errors */
 .sudoku-cell.error {
-   background-color: var(--cell-error-bg, #fff); /* Keep background white (or change if needed) */
+   background-color: var(--cell-error-bg, #fff);
    color: var(--cell-error-text, #dc3545); /* Red text for error */
    animation: shake 0.3s;
-   font-weight: bold; /* Ensure error text is bold */
+   font-weight: bold;
 }
 
 /* Style for cells revealed by hints */
@@ -162,36 +187,23 @@ const selectCell = (row, col) => {
    color: var(--cell-hint-text, #0c5460); /* Darker blue text */
    font-style: italic;
    font-weight: bold;
+   cursor: default; /* Hints are not interactive */
 }
 
-/* Thicker borders for subgrids (3x3 boxes) */
-.thick-border-right {
-  border-right: 2px solid var(--strong-border-color, #333);
-}
-.thick-border-bottom {
-  border-bottom: 2px solid var(--strong-border-color, #333);
-}
+/* Thicker borders for subgrids */
+.thick-border-right { border-right: 2px solid var(--strong-border-color, #333); }
+.thick-border-bottom { border-bottom: 2px solid var(--strong-border-color, #333); }
 
  .paused-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(128, 128, 128, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2em;
-    color: white;
-    font-weight: bold;
-    z-index: 10;
-    pointer-events: none;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(128, 128, 128, 0.6); display: flex;
+    justify-content: center; align-items: center; font-size: 2em;
+    color: white; font-weight: bold; z-index: 10; pointer-events: none;
  }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  75% { transform: translateX(3px); }
+  25%, 75% { transform: translateX(-4px); } /* Increased shake */
+  50% { transform: translateX(4px); }
 }
 </style>
