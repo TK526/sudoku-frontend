@@ -1,59 +1,44 @@
-<script setup lang="ts">
+<script setup>
 import { computed } from 'vue';
-import type { CellPosition } from '../types'; // Import shared type
 
-// Define Props
-interface Props {
-  gridData: number[][];
-  initialGrid: number[][]; // To know which cells were pre-filled
-  selectedCell: CellPosition | null;
-  errorCells: Set<string>; // Reactive Set passed down ('row-col')
-  hintCells: Set<string>; // Reactive Set passed down ('row-col')
-  isPaused: boolean;
-  // Props for win animation - Need to test TODO
-  // winningRow?: number | null;
-  // winningCol?: number | null;
-  // winningBox?: { startRow: number, startCol: number } | null;
-}
-const props = defineProps<Props>();
+const props = defineProps({
+  gridData: { type: Array, required: true },
+  initialGrid: { type: Array, required: true },
+  selectedCell: { type: Object, default: null },
+  errorCells: { type: Object, required: true }, // Reactive Set
+  hintCells: { type: Object, required: true }, // Reactive Set
+  isPaused: { type: Boolean, default: false }
+});
 
-// Define Emits
-const emit = defineEmits<{
-  (event: 'cell-selected', position: CellPosition): void;
-}>();
+const emit = defineEmits(['cell-selected']);
 
-// Computed properties
-const gridDimension = computed(() => props.gridData?.length || 9);
-const subgridSize = computed(() => Math.sqrt(gridDimension.value)); // Assumes perfect square
+const gridDimension = computed(() => props.gridData.length);
+const subgridSize = computed(() => Math.sqrt(gridDimension.value));
 
-// Helper functions for cell state
-const isPrefilled = (row: number, col: number): boolean => {
-  return !!props.initialGrid[row]?.[col]; // Check if non-zero in initial grid
+const isPrefilled = (row, col) => {
+    // Check the initial grid state passed down
+    return props.initialGrid[row]?.[col] !== 0;
 };
 
-const isSelected = (row: number, col: number): boolean => {
-  return props.selectedCell?.row === row && props.selectedCell?.col === col;
-};
+ const isSelected = (row, col) => {
+    return props.selectedCell?.row === row && props.selectedCell?.col === col;
+ };
 
-const isError = (row: number, col: number): boolean => {
-  return props.errorCells.has(`${row}-${col}`);
-};
+ const isError = (row, col) => {
+    return props.errorCells.has(`${row}-${col}`);
+ };
 
-const isHint = (row: number, col: number): boolean => {
-  return props.hintCells.has(`${row}-${col}`);
-};
+  const isHint = (row, col) => {
+    return props.hintCells.has(`${row}-${col}`);
+ };
 
-// Dynamically calculate CSS classes for a cell
-const getCellClass = (row: number, col: number): string[] => {
+
+const getCellClass = (row, col) => {
   const classes = ['sudoku-cell'];
-  const prefilled = isPrefilled(row, col);
-  const hint = isHint(row, col);
-
-  if (prefilled) classes.push('prefilled');
+  if (isPrefilled(row, col)) classes.push('prefilled');
   if (isSelected(row, col)) classes.push('selected');
   if (isError(row, col)) classes.push('error');
-  if (hint) classes.push('hint'); // Hints override user input style
-  if (!prefilled && !hint) classes.push('user-input'); // Style user numbers differently
+  if (isHint(row, col)) classes.push('hint'); // Added hint class
 
   // Add thicker borders for subgrids
   if ((col + 1) % subgridSize.value === 0 && col < gridDimension.value - 1) {
@@ -63,181 +48,150 @@ const getCellClass = (row: number, col: number): string[] => {
     classes.push('thick-border-bottom');
   }
 
-  // Add win animation - Need to test
-  // if (props.winningRow === row) classes.push('win-highlight');
-  // if (props.winningCol === col) classes.push('win-highlight');
-  // if (props.winningBox && row >= props.winningBox.startRow && row < props.winningBox.startRow + subgridSize.value && col >= props.winningBox.startCol && col < props.winningBox.startCol + subgridSize.value) classes.push('win-highlight');
-
   return classes;
 };
 
-// Handler for clicking a cell
-const selectCell = (row: number, col: number): void => {
-  // Prevent selection when paused or if cell is pre-filled
-  if (props.isPaused || isPrefilled(row, col)) {
-     // Optionally deselect if clicking prefilled?
-     // emit('cell-selected', null); // Or just do nothing
-      return;
-  }
-  emit('cell-selected', { row, col });
-};
+const selectCell = (row, col) => {
+    if (props.isPaused) return; // Prevent selection when paused
+    // Emit only if the cell is NOT prefilled
+    // Let App.vue handle the logic of whether to actually select it
+     emit('cell-selected', { row, col });
 
+};
 </script>
 
 <template>
-  <div class="sudoku-grid-container" :class="{ paused: isPaused }">
-    <!-- The main grid element -->
-    <div v-if="gridData.length > 0" class="sudoku-grid" :style="{ '--grid-size': gridDimension }">
-      <!-- Loop through rows FIRST -->
-      <template v-for="(row, rowIndex) in gridData" :key="`row-${rowIndex}`">
-        <!-- Loop through columns SECOND, generating the cells directly -->
-        <div
-          v-for="(cellValue, colIndex) in row"
-          :key="`cell-${rowIndex}-${colIndex}`"
-          :class="getCellClass(rowIndex, colIndex)"
-          @click="selectCell(rowIndex, colIndex)"
-          role="button"
-          :aria-label="`Cell Row ${rowIndex+1} Column ${colIndex+1} Value ${cellValue || 'Empty'}`"
-          :aria-selected="isSelected(rowIndex, colIndex)"
-          :aria-disabled="isPrefilled(rowIndex, colIndex)"
-          tabindex="0" <!-- Make cells focusable for accessibility -->
-          @keydown.enter.space="selectCell(rowIndex, colIndex)" <!-- Allow selection with keyboard -->
-        >
-          {{ cellValue === 0 ? '' : cellValue }}
-        </div>
-      </template>
+    <div class="sudoku-grid-container" :class="{ paused: isPaused }">
+      <!-- The main grid container - direct children will be the cells -->
+      <div v-if="gridData.length > 0" class="sudoku-grid" :style="{ '--grid-size': gridDimension }">
+        <!-- Loop through rows FIRST -->
+        <template v-for="(row, rowIndex) in gridData" :key="`row-${rowIndex}`">
+          <!-- Loop through columns SECOND, generating the cells directly -->
+          <div
+            v-for="(cellValue, colIndex) in row"
+            :key="`cell-${rowIndex}-${colIndex}`"
+            :class="getCellClass(rowIndex, colIndex)"
+            @click="selectCell(rowIndex, colIndex)"
+          >
+            {{ cellValue === 0 ? '' : cellValue }}
+          </div>
+        </template>
+      </div>
+      <div v-else>Loading Grid...</div>
+      <div v-if="isPaused" class="paused-overlay">Paused</div>
     </div>
-    <div v-else class="loading-grid">Loading Grid...</div>
-    <div v-if="isPaused" class="paused-overlay">Paused</div>
-  </div>
 </template>
 
 <style scoped>
  .sudoku-grid-container {
     position: relative;
+    margin-bottom: 1em;
     width: 100%;
-    max-width: 540px; /* Or adjust as needed */
+    max-width: 540px; /* Adjust size as needed, keep divisible by 9 */
     aspect-ratio: 1 / 1;
     margin-left: auto;
     margin-right: auto;
  }
 
- .loading-grid {
+/* This is the main grid element */
+.sudoku-grid {
+  display: grid;
+  /* Define 9 equal columns and rows */
+  grid-template-columns: repeat(var(--grid-size, 9), 1fr);
+  grid-template-rows: repeat(var(--grid-size, 9), 1fr);
+  /* Use the strong border for the outer edge */
+  border: 3px solid var(--strong-border-color, #333); /* Added fallback */
+  width: 100%;
+  height: 100%;
+  background-color: var(--cell-bg, #fff); /* Added fallback */
+}
+
+/* Styles for each individual cell */
+.sudoku-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Adjust font size as needed */
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  /* Use the standard border color for thin internal lines */
+  border: 1px solid var(--border-color, #bbb); /* Added fallback */
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  background-color: var(--cell-bg, #fff);
+  color: #111; /* Default text color */
+  box-sizing: border-box; /* Ensure border doesn't add to size */
+}
+
+/* Style for user-editable cells (not prefilled) */
+.sudoku-cell:not(.prefilled) {
+    font-weight: bold;
+    color: #0056b3; /* Blue color for user input */
+}
+.sudoku-cell:not(.prefilled):hover {
+    background-color: #f0f8ff; /* Light hover */
+}
+
+/* Style for the initial numbers given */
+.sudoku-cell.prefilled {
+  background-color: var(--cell-prefilled-bg, #e0e0e0); /* Added fallback */
+  cursor: default;
+  font-weight: bold;
+  color: #333; /* Darker color */
+}
+
+/* Style for the currently selected cell (yellow) */
+.sudoku-cell.selected {
+  background-color: var(--cell-selected-bg, #fffbaf); /* Added fallback yellow */
+  /* Optional: Add outline */
+  /* outline: 2px solid #f0c000; */
+  z-index: 1; /* Ensure it's visually on top if needed */
+}
+
+/* Style for cells marked as errors */
+.sudoku-cell.error {
+   background-color: var(--cell-error-bg, #fff); /* Keep background white (or change if needed) */
+   color: var(--cell-error-text, #dc3545); /* Red text for error */
+   animation: shake 0.3s;
+   font-weight: bold; /* Ensure error text is bold */
+}
+
+/* Style for cells revealed by hints */
+.sudoku-cell.hint {
+   background-color: var(--cell-hint-bg, #d1ecf1); /* Light blue */
+   color: var(--cell-hint-text, #0c5460); /* Darker blue text */
+   font-style: italic;
+   font-weight: bold;
+}
+
+/* Thicker borders for subgrids (3x3 boxes) */
+.thick-border-right {
+  border-right: 2px solid var(--strong-border-color, #333);
+}
+.thick-border-bottom {
+  border-bottom: 2px solid var(--strong-border-color, #333);
+}
+
+ .paused-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(128, 128, 128, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%;
-    font-style: italic;
-    color: #777;
+    font-size: 2em;
+    color: white;
+    font-weight: bold;
+    z-index: 10;
+    pointer-events: none;
  }
 
- .sudoku-grid {
-   display: grid;
-   grid-template-columns: repeat(var(--grid-size, 9), 1fr);
-   grid-template-rows: repeat(var(--grid-size, 9), 1fr);
-   border: 3px solid var(--strong-border-color, #333);
-   width: 100%;
-   height: 100%;
-   background-color: var(--cell-bg, #fff);
- }
-
- .sudoku-cell {
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   font-size: clamp(1.5rem, 5vw, 2rem); /* Slightly adjusted */
-   border: 1px solid var(--border-color, #bbb);
-   cursor: pointer;
-   user-select: none;
-   transition: background-color 0.15s ease-out;
-   background-color: var(--cell-bg, #fff);
-   color: #111;
-   box-sizing: border-box;
-   position: relative; /* For potential future animations/overlays */
- }
-
-/* Add focus outline for accessibility */
-.sudoku-cell:focus {
-    outline: 2px solid blue;
-    outline-offset: -2px;
-    z-index: 2;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
-
-
- .sudoku-cell.user-input { /* Style for user-entered numbers */
-     font-weight: 600; /* Bold */
-     color: #0056b3; /* Blue */
- }
- .sudoku-cell.user-input:hover {
-     background-color: #f0f8ff; /* Light hover */
- }
-
- .sudoku-cell.prefilled {
-   background-color: var(--cell-prefilled-bg, #e0e0e0);
-   cursor: default;
-   font-weight: 600; /* Make bold */
-   color: #222; /* Darker */
- }
-
- .sudoku-cell.selected {
-   background-color: var(--cell-selected-bg, #fffbaf);
-   /* outline: 2px solid #e0a800; Optional border */
-   z-index: 1;
- }
-
- .sudoku-cell.error {
-    background-color: var(--cell-error-bg, #fff);
-    color: var(--cell-error-text, #dc3545); /* Red text */
-    /* Add back subtle background if preferred */
-    /* background-color: #f8d7da; */
-    animation: shake 0.4s ease-in-out;
-    font-weight: 700; /* Extra bold error */
- }
-
- .sudoku-cell.hint {
-    background-color: var(--cell-hint-bg, #d1ecf1);
-    color: var(--cell-hint-text, #0c5460);
-    font-style: italic;
-    font-weight: 600; /* Make hints stand out */
-    cursor: default; /* Hints usually aren't re-selectable once placed */
- }
-
- .thick-border-right {
-   border-right: 2px solid var(--strong-border-color, #333);
- }
- .thick-border-bottom {
-   border-bottom: 2px solid var(--strong-border-color, #333);
- }
-
-  .paused-overlay {
-     position: absolute;
-     inset: 0; /* Covers the whole container */
-     background-color: rgba(180, 180, 180, 0.65);
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     font-size: 2.5em;
-     color: white;
-     font-weight: bold;
-     text-shadow: 1px 1px 2px black;
-     z-index: 10;
-     pointer-events: none;
-     border-radius: inherit;
-  }
-
- @keyframes shake {
-   0%, 100% { transform: translateX(0); }
-   25%, 75% { transform: translateX(-4px); }
-   50% { transform: translateX(4px); }
- }
-
- /* Win animation style (Example) */
- .win-highlight {
-    animation: winPulse 0.8s ease-in-out infinite alternate;
- }
-
- @keyframes winPulse {
-    from { background-color: var(--cell-bg); }
-    to { background-color: var(--color-win-animation); color: white; }
- }
 </style>

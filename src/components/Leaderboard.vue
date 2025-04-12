@@ -1,19 +1,13 @@
-<script setup lang="ts">
-import type { LeaderboardData, LeaderboardEntry } from '../types';
+<script setup>
+defineProps({
+  leaderboardData: { type: Object, required: true },
+   isLoading: { type: Boolean, default: false }
+});
 
-interface Props {
-  leaderboardData: LeaderboardData | null; // Can be null initially
-  isLoading: boolean;
-}
-defineProps<Props>();
+ const difficultyOrder = ['beginner', 'intermediate', 'hard', 'expert'];
 
-const difficultyOrder: Array<keyof LeaderboardData> = ['beginner', 'intermediate', 'hard', 'expert'];
-
-// Function to format score
-const formatScore = (score: number): string => score?.toLocaleString() ?? 'N/A';
-
-// Helper to capitalize difficulty names
-const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+ // Function to format score or time if needed, e.g., add commas
+ const formatScore = (score) => score?.toLocaleString() || 'N/A';
 
 </script>
 
@@ -21,21 +15,19 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
   <div class="leaderboard">
     <h3>🏆 Leaderboard</h3>
     <div v-if="isLoading" class="loading-message">Loading...</div>
-    <div v-else-if="!leaderboardData || difficultyOrder.every(d => !leaderboardData[d]?.length)" class="no-data">
-       No records yet. Play a game!
+    <div v-else-if="!leaderboardData || Object.keys(leaderboardData).length === 0" class="no-data">
+       No leaderboard data available yet.
     </div>
     <div v-else>
-       <!-- Iterate over difficulties in defined order -->
        <div v-for="difficulty in difficultyOrder" :key="difficulty" class="difficulty-section">
-         <h4>{{ capitalize(difficulty) }}</h4>
+         <h4>{{ difficulty.charAt(0).toUpperCase() + difficulty.slice(1) }}</h4>
          <ul v-if="leaderboardData[difficulty]?.length > 0">
-           <li v-for="(record, index) in leaderboardData[difficulty]" :key="record.id">
-             <span class="rank">{{ index + 1 }}.</span>
-             <span class="username">{{ record.username }}</span>
-             <span class="score">{{ formatScore(record.score) }}</span>
+           <li v-for="(record, index) in leaderboardData[difficulty]" :key="record.id || index">
+             <span>{{ index + 1 }}. {{ record.username }}</span>
+             <span>{{ formatScore(record.score) }}</span>
            </li>
          </ul>
-         <p v-else class="no-records">No records for {{ difficulty }}.</p>
+         <p v-else class="no-records">No records for this difficulty.</p>
        </div>
     </div>
   </div>
@@ -44,9 +36,7 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
 <style scoped>
 .leaderboard {
   text-align: left;
-  padding: 10px;
-  background-color: var(--sidebar-bg); /* Ensure background */
-  border-radius: 4px; /* Optional rounded corners */
+  padding: 10px; /* Add some padding inside the sidebar */
 }
 
 .leaderboard h3 {
@@ -54,26 +44,17 @@ const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
   margin-top: 0;
   margin-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px; /* Increased padding */
-  font-weight: 600;
-  color: #333;
+  padding-bottom: 5px;
 }
 
 .difficulty-section {
-    margin-bottom: 18px; /* Increased spacing */
-}
-
-.difficulty-section:last-child {
-    margin-bottom: 0;
+    margin-bottom: 15px;
 }
 
  .difficulty-section h4 {
-    margin-bottom: 8px; /* Increased spacing */
+    margin-bottom: 5px;
     color: #444;
     font-size: 1em;
-    font-weight: 600;
-    border-bottom: 1px solid #eee; /* Subtle separator */
-    padding-bottom: 3px;
  }
 
 ul {
@@ -83,48 +64,28 @@ ul {
 }
 
 li {
-  display: grid; /* Use grid for alignment */
-  grid-template-columns: auto 1fr auto; /* Rank, Name (flexible), Score */
-  gap: 8px; /* Spacing between columns */
-  padding: 5px 0; /* Increased padding */
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
   font-size: 0.9em;
-  border-bottom: 1px dashed #e0e0e0; /* Slightly darker dash */
-  align-items: center;
+  border-bottom: 1px dashed #eee;
 }
 
 li:last-child {
     border-bottom: none;
 }
 
-.rank {
-    color: #666;
-    font-weight: 500;
-    min-width: 20px; /* Ensure rank aligns */
-    text-align: right;
+li span:first-child {
+    font-weight: bold;
+    color: #555;
 }
-
-.username {
-    font-weight: 500;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Prevent long names breaking layout */
-}
-
-.score {
-    color: var(--color-success); /* Use variable */
-    font-weight: 600;
-    text-align: right;
+ li span:last-child {
+    color: #0056b3; /* Score color */
 }
 
  .loading-message, .no-data, .no-records {
     text-align: center;
     color: #777;
-    padding: 15px 0; /* More padding */
-    font-style: italic;
- }
- .no-records {
-     font-size: 0.85em;
-     padding: 5px 0;
+    padding: 10px;
  }
 </style>
