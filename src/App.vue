@@ -410,6 +410,7 @@ onUnmounted(() => {
           :animating-rows="animatingRows"
           :animating-cols="animatingCols"
           :animating-boxes="new Set()"
+          :is-completed="isCompleted"
           @cell-selected="handleCellSelect"
         ></SudokuGrid>
         <!-- Show prompt when no game is active -->

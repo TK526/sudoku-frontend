@@ -13,6 +13,7 @@ interface Props {
   isPaused: boolean;
   animatingRows: Set<number>;   // Animation
   animatingCols: Set<number>;   // Animation
+  isCompleted: boolean; // Winning Animation
 }
 const props = defineProps<Props>();
 
@@ -76,8 +77,11 @@ const selectCell = (row: number, col: number): void => {
 </script>
 
 <template>
-    <div class="sudoku-grid-container" :class="{ paused: isPaused }">
-      <div v-if="gridData.length > 0" class="sudoku-grid" :style="{ '--grid-size': gridDimension }">
+      <div
+        class="sudoku-grid-container"
+        :class="{ paused: isPaused, 'game-completed': isCompleted }"
+      >
+        <div v-if="gridData.length > 0" class="sudoku-grid" :style="{ '--grid-size': gridDimension }">
         <template v-for="(row, rowIndex) in gridData" :key="`row-${rowIndex}`">
           <div
             v-for="(cellValue, colIndex) in row"
@@ -227,5 +231,36 @@ const selectCell = (row: number, col: number): void => {
   /* Optional: Add a subtle background highlight during the shake */
   /* background-color: var(--cell-selected-bg); */
   z-index: 5; /* Ensure animated cells are visually on top */
+}
+
+/*
+Winning Animation
+*/
+@keyframes celebrate {
+  0%, 100% { transform: scale(1); background-color: var(--color-success); color: white; }
+  50% { transform: scale(1.08); background-color: lighten(var(--color-success), 10%); }
+}
+
+/* Apply animation to all cells when game is completed */
+.game-completed .sudoku-cell {
+  /* Apply animation with delay based on position? Or all at once? */
+  /* Let's try all at once first */
+  animation: celebrate 1s ease-in-out 1 forwards; /* Run once and stay at end state */
+  /* Optional: Add slight delay */
+  /* animation-delay: 0.1s; */
+}
+
+/* You might want to override other styles during celebration */
+.game-completed .sudoku-cell.selected {
+    background-color: var(--color-success); /* Keep win color */
+}
+.game-completed .sudoku-cell.error {
+    color: white; /* Make error text white on green bg */
+    animation: none; /* Prevent shake during win */
+}
+.game-completed .sudoku-cell.hint {
+     background-color: var(--color-success); /* Override hint bg */
+     color: white;
+     font-style: normal; /* Remove italic during win */
 }
 </style>
