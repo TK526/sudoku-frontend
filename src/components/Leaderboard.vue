@@ -30,7 +30,7 @@ const capitalize = (s: string): string => s ? s.charAt(0).toUpperCase() + s.slic
     </div>
     <div v-else>
        <!-- Check if all difficulties are empty -->
-<div v-if="leaderboardData && difficultyOrder.every(d => !leaderboardData[d]?.length)" class="no-data">
+<div v-if="leaderboardData && difficultyOrder.every(d => !(leaderboardData && leaderboardData[d].length))" class="no-data">
            No records found for any difficulty.
        </div>
        <template v-else>

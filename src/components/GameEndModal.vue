@@ -49,9 +49,9 @@ onMounted(() => {
   <div class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <h2>🎉 Game Completed! 🎉</h2>
-      <p>Difficulty: <strong>{{ difficulty }}</strong></p>
-      <p>Time: <strong>{{ time }}</strong></p>
-      <p>Final Score: <strong>{{ score?.toLocaleString() ?? 'N/A' }}</strong></p> <!-- Handle null score -->
+      <p>Difficulty: <strong>{{ props.difficulty }}</strong></p>
+      <p>Time: <strong>{{ props.time }}</strong></p>
+      <p>Final Score: <strong>{{ props.score?.toLocaleString() ?? 'N/A' }}</strong></p> <!-- Handle null score -->
 
       <!-- Use form for better accessibility and enter key submission -->
       <form @submit.prevent="handleSubmit">
